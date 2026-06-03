@@ -1,6 +1,22 @@
 import Foundation
 import SwiftUI
 
+// MARK: - AppState
+// Tracks which screen the user is currently looking at.
+enum AppScreen {
+    case menu
+    case game
+    case shop
+    case settings
+    case howToPlay
+}
+
+// Tracks the type of game being played.
+enum GameMode {
+    case ai
+    case local
+}
+
 // MARK: - GameState
 // Tracks the different phases of the game so the UI can change what it shows.
 enum GameState {
@@ -16,8 +32,13 @@ enum GameState {
 class GameViewModel {
     // MARK: - Stored properties
     
+    // NAVIGATION: Tracks the current screen.
+    var currentScreen: AppScreen = .menu
+    
+    // NAVIGATION: Tracks the selected game mode.
+    var gameMode: GameMode = .local
+    
     // ARRAY: This stores all the players in the game.
-    // It's a collection of 'Player' objects.
     var players: [Player] = []
     
     // The two balls used in Crud.
@@ -30,6 +51,9 @@ class GameViewModel {
     // The size of our virtual pool table.
     var tableSize: CGSize = CGSize(width: 300, height: 600)
     
+    // AI: Tracks if the computer is currently "thinking" to avoid double shots.
+    var isAiThinking: Bool = false
+    
     // MARK: - Initializer
     
     init() {
@@ -37,17 +61,30 @@ class GameViewModel {
         self.shooterBall = Ball(type: .shooter, position: CGPoint(x: 150, y: 550))
         self.objectBall = Ball(type: .object, position: CGPoint(x: 150, y: 100))
         
-        // Add two default players to the 'players' array so we have someone to play.
-        self.players = [
-            Player(name: "Player 1"),
-            Player(name: "Player 2")
-        ]
-        
-        // Set the first player in the array as the active one.
-        self.players[0].isActive = true
+        // Setup initial players for local mode.
+        setupPlayers(for: .local)
     }
     
     // MARK: - Functions
+    
+    /// Sets up the player array based on the chosen game mode.
+    /// - Parameter mode: INPUT: Either .ai or .local
+    func setupPlayers(for mode: GameMode) {
+        self.gameMode = mode
+        if mode == .ai {
+            self.players = [
+                Player(name: "You"),
+                Player(name: "CPU")
+            ]
+        } else {
+            self.players = [
+                Player(name: "Player 1"),
+                Player(name: "Player 2")
+            ]
+        }
+        self.players[0].isActive = true
+        resetTable()
+    }
     
     /// Resets the balls to their starting spots and clears their speed.
     func resetTable() {
@@ -58,65 +95,103 @@ class GameViewModel {
         objectBall.velocity = .zero
         
         gameState = .waitingToServe
+        isAiThinking = false
     }
     
     /// Called when the user drags their finger on the screen.
-    /// - Parameter point: The new (x, y) coordinate where the finger is.
+    /// - Parameter point: INPUT: The new (x, y) coordinate where the finger is.
     func dragBall(to point: CGPoint) {
-        // When dragging, we snap the shooter ball directly to the finger's position.
-        shooterBall.position = point
-        shooterBall.velocity = .zero // Stop it from rolling while held.
+        // Only allow dragging if it's a human's turn.
+        if let activePlayer = players.first(where: { $0.isActive }), activePlayer.name != "CPU" {
+            shooterBall.position = point
+            shooterBall.velocity = .zero
+        }
     }
     
     /// Called when the user releases their finger (the "Flick").
-    /// - Parameter velocity: How fast and in what direction the flick happened.
+    /// - Parameter velocity: INPUT: How fast and in what direction the flick happened.
     func shootBall(with velocity: CGVector) {
         shooterBall.velocity = velocity
         gameState = .inPlay
     }
     
     /// This function is called 60 times per second by the View's Timeline.
-    /// It updates the position of all moving objects.
     func updatePhysics() {
-        // Friction: We multiply velocity by 0.985 each frame to slow it down (air/cloth resistance).
         let friction: CGFloat = 0.985 
         
-        // Update both balls.
         updateBallPhysics(shooterBall, friction: friction)
         updateBallPhysics(objectBall, friction: friction)
         
-        // Check if the two balls hit each other.
         checkBallCollision()
+        
+        // AI TURN: If it's the CPU's turn and balls have stopped, trigger the AI shot.
+        if gameMode == .ai && players.indices.contains(1) && players[1].isActive {
+            if !shooterBall.isMoving && !objectBall.isMoving && !isAiThinking {
+                triggerAiShot()
+            }
+        }
+    }
+    
+    /// AI Logic: Calculates a shot towards the object ball and executes it.
+    private func triggerAiShot() {
+        isAiThinking = true
+        
+        // Add a small delay so the CPU doesn't shoot instantly (feels more natural).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            
+            // 1. Calculate direction to the object ball.
+            let dx = self.objectBall.position.x - self.shooterBall.position.x
+            let dy = self.objectBall.position.y - self.shooterBall.position.y
+            
+            // 2. Normalize and scale for speed.
+            let distance = sqrt(dx*dx + dy*dy)
+            let speed: CGFloat = 15.0 // CPU shot power
+            
+            // 3. Add a bit of "Human Error" so it's not perfect every time.
+            let errorX = CGFloat.random(in: -10...10)
+            let errorY = CGFloat.random(in: -10...10)
+            
+            let velocity = CGVector(
+                dx: (dx / distance) * speed + errorX,
+                dy: (dy / distance) * speed + errorY
+            )
+            
+            // 4. Fire!
+            self.shootBall(with: velocity)
+            
+            // 5. Switch back to player turn (normally handled by game rules, but for now we'll toggle)
+            self.toggleActivePlayer()
+            self.isAiThinking = false
+        }
+    }
+    
+    /// Simple helper to switch turns between players.
+    private func toggleActivePlayer() {
+        for player in players {
+            player.isActive.toggle()
+        }
     }
     
     /// Updates a single ball's position based on its speed and handles wall bounces.
-    /// - Parameters:
-    ///   - ball: The ball object to update.
-    ///   - friction: The multiplier to slow it down.
     private func updateBallPhysics(_ ball: Ball, friction: CGFloat) {
-        // 1. Move the ball: New Position = Old Position + Speed
         ball.position.x += ball.velocity.dx
         ball.position.y += ball.velocity.dy
         
-        // 2. Apply Friction: Speed = Old Speed * 0.985
         ball.velocity.dx *= friction
         ball.velocity.dy *= friction
         
-        // 3. Stop if too slow: If it's barely moving, just set it to zero.
         if abs(ball.velocity.dx) < 0.1 { ball.velocity.dx = 0 }
         if abs(ball.velocity.dy) < 0.1 { ball.velocity.dy = 0 }
         
-        // 4. Wall collisions (Bouncing)
-        // Check Left and Right walls
         if ball.position.x - ball.radius <= 0 {
-            ball.position.x = ball.radius // Keep it inside the wall
-            ball.velocity.dx *= -0.8      // Flip direction and lose 20% speed
+            ball.position.x = ball.radius
+            ball.velocity.dx *= -0.8
         } else if ball.position.x + ball.radius >= tableSize.width {
             ball.position.x = tableSize.width - ball.radius
             ball.velocity.dx *= -0.8
         }
         
-        // Check Top and Bottom walls
         if ball.position.y - ball.radius <= 0 {
             ball.position.y = ball.radius
             ball.velocity.dy *= -0.8

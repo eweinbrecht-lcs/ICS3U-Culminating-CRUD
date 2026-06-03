@@ -17,6 +17,7 @@
 		CA4FF32F2FCE12E70002A927 /* HandView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FF32E2FCE12E70002A927 /* HandView.swift */; };
 		CA4FF3312FCE12F00002A927 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FF3302FCE12F00002A927 /* GameView.swift */; };
 		CA4FF3332FCE12FA0002A927 /* BallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FF3322FCE12FA0002A927 /* BallView.swift */; };
+		CA5C41C02FD06586003A2485 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA5C41BF2FD06585003A2485 /* MainMenuView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 		CA4FF32E2FCE12E70002A927 /* HandView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandView.swift; sourceTree = "<group>"; };
 		CA4FF3302FCE12F00002A927 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		CA4FF3322FCE12FA0002A927 /* BallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallView.swift; sourceTree = "<group>"; };
+		CA5C41BF2FD06585003A2485 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MainMenuView.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +95,7 @@
 		CA4FF31C2FCE0ACE0002A927 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				CA5C41BF2FD06585003A2485 /* MainMenuView.swift */,
 				CA4FF3322FCE12FA0002A927 /* BallView.swift */,
 				CA4FF3302FCE12F00002A927 /* GameView.swift */,
 				CA4FF32E2FCE12E70002A927 /* HandView.swift */,
@@ -177,6 +180,7 @@
 				CA4FF32B2FCE12D50002A927 /* GameViewModel.swift in Sources */,
 				CA4FF32D2FCE12DF0002A927 /* TableView.swift in Sources */,
 				CA4FF3292FCE128A0002A927 /* Ball.swift in Sources */,
+				CA5C41C02FD06586003A2485 /* MainMenuView.swift in Sources */,
 				CA4FF32F2FCE12E70002A927 /* HandView.swift in Sources */,
 				CA4FF3272FCE126D0002A927 /* Player.swift in Sources */,
 				CA4FF3132FCE0ACD0002A927 /* ICS3U Culminating CRUDApp.swift in Sources */,

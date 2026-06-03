@@ -32,10 +32,10 @@ class Ball {
     
     /// Sets up a ball with its starting details.
     /// - Parameters:
-    ///   - type: Which kind of ball this is.
-    ///   - position: Where to put it on the table.
-    ///   - velocity: How fast it starts (defaults to 0).
-    ///   - radius: How big it is (defaults to 15 pixels).
+    ///   - type: INPUT: Which kind of ball this is.
+    ///   - position: INPUT: Where to put it on the table.
+    ///   - velocity: INPUT: How fast it starts (defaults to 0).
+    ///   - radius: INPUT: How big it is (defaults to 15 pixels).
     init(type: BallType, position: CGPoint, velocity: CGVector = .zero, radius: CGFloat = 15.0) {
         self.type = type
         self.position = position
@@ -46,6 +46,7 @@ class Ball {
     // MARK: - Computed properties
     
     // This is a helper that tells us if the ball is currently moving.
+    // OUTPUT: Returns True if it's moving, False if it's still.
     // We check if either dx or dy velocity is greater than a tiny amount (0.1).
     var isMoving: Bool {
         return abs(velocity.dx) > 0.1 || abs(velocity.dy) > 0.1

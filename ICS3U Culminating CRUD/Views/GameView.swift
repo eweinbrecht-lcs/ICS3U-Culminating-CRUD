@@ -5,8 +5,8 @@ import SwiftUI
 struct GameView: View {
     // MARK: - Stored properties
     
-    // We create one instance of the ViewModel to manage our game logic.
-    @State private var viewModel = GameViewModel()
+    // INPUT: The shared ViewModel passed from RootView.
+    var viewModel: GameViewModel
     
     // MARK: - Computed properties
     
@@ -14,6 +14,27 @@ struct GameView: View {
         // TimelineView acts like a "Game Loop." It refreshes the screen constantly.
         TimelineView(.animation) { timeline in
             VStack {
+                // --- TOP NAV ---
+                HStack {
+                    Button(action: {
+                        withAnimation { viewModel.currentScreen = .menu }
+                    }) {
+                        Image(systemName: "house.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(Circle().fill(Color.brown))
+                    }
+                    Spacer()
+                    Text(viewModel.gameMode == .ai ? "VS AI" : "Local PvP")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 15)
+                        .padding(.vertical, 5)
+                        .background(Capsule().fill(Color.black.opacity(0.3)))
+                }
+                .padding(.horizontal)
+                
                 // --- HUD (Heads Up Display) ---
                 HStack {
                     // ARRAY: We loop through the players array to show everyone's lives.
@@ -21,10 +42,15 @@ struct GameView: View {
                         VStack {
                             Text(player.name)
                                 .fontWeight(player.isActive ? .bold : .regular)
+                                .foregroundColor(player.isActive ? .yellow : .white)
                             Text("Lives: \(player.lives)")
-                                .foregroundColor(player.lives == 1 ? .red : .primary)
+                                .foregroundColor(player.lives == 1 ? .red : .white.opacity(0.8))
                         }
-                        .padding()
+                        .padding(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(player.isActive ? Color.white.opacity(0.2) : Color.clear)
+                        )
                     }
                 }
                 // Every time the timeline "ticks," we tell the ViewModel to update the physics.
@@ -44,20 +70,17 @@ struct GameView: View {
                     BallView(ball: viewModel.shooterBall)
                     
                     // 3. The Hand (Top layer)
-                    // We only show the hand if the ball is still or we are waiting to start.
-                    if viewModel.gameState == .waitingToServe || viewModel.shooterBall.velocity == .zero {
+                    // We only show the hand if it's a HUMAN player's turn and balls are stopped.
+                    if isHumanTurn && (!viewModel.shooterBall.isMoving && !viewModel.objectBall.isMoving) {
                         HandView(isRightHand: true)
                             .position(viewModel.shooterBall.position)
-                            .offset(y: 30) // Position the hand slightly below the ball
+                            .offset(y: 30)
                             .gesture(
-                                // GESTURE: This allows the user to touch and move the hand.
                                 DragGesture()
                                     .onChanged { value in
-                                        // While dragging, update the ball's position.
                                         viewModel.dragBall(to: value.location)
                                     }
                                     .onEnded { value in
-                                        // When released, calculate the "flick" speed.
                                         let velocity = CGVector(
                                             dx: value.predictedEndLocation.x - value.location.x,
                                             dy: value.predictedEndLocation.y - value.location.y
@@ -65,6 +88,16 @@ struct GameView: View {
                                         viewModel.shootBall(with: velocity)
                                     }
                             )
+                    }
+                    
+                    // AI Thinking Label
+                    if viewModel.isAiThinking {
+                        Text("CPU is thinking...")
+                            .font(.caption.bold())
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .background(Capsule().fill(Color.black.opacity(0.6)))
+                            .position(x: viewModel.tableSize.width / 2, y: viewModel.tableSize.height / 2)
                     }
                 }
                 .frame(width: viewModel.tableSize.width, height: viewModel.tableSize.height)
@@ -77,21 +110,25 @@ struct GameView: View {
                         viewModel.resetTable()
                     }
                     .buttonStyle(.bordered)
+                    .tint(.white)
                     
-                    Button("Add Life") {
-                        // Find the first player who is active and give them a life.
-                        if let activePlayer = viewModel.players.first(where: { $0.isActive }) {
-                            activePlayer.lives += 1
-                        }
-                    }
-                    .buttonStyle(.bordered)
+                    Spacer()
                 }
                 .padding()
             }
+            .background(Color.green.ignoresSafeArea())
         }
+    }
+    
+    // Helper to check if it's a human's turn.
+    private var isHumanTurn: Bool {
+        if let activePlayer = viewModel.players.first(where: { $0.isActive }) {
+            return activePlayer.name != "CPU"
+        }
+        return false
     }
 }
 
 #Preview {
-    GameView()
+    GameView(viewModel: GameViewModel())
 }

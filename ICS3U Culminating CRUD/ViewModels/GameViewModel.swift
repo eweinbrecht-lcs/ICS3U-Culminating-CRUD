@@ -2,73 +2,61 @@ import Foundation
 import SwiftUI
 
 // MARK: - AppState
-// Tracks which screen the user is currently looking at.
 enum AppScreen {
     case menu
     case game
     case shop
     case settings
     case howToPlay
+    case localMultiplayer
+    case aiGame
 }
 
-// Tracks the type of game being played.
 enum GameMode {
     case ai
     case local
 }
 
-// MARK: - GameState
-// Tracks the different phases of the game so the UI can change what it shows.
 enum GameState {
-    case waitingToServe // Game hasn't started yet
-    case inPlay         // Balls are moving
-    case pointScored    // Someone lost a life
-    case gameOver       // Someone ran out of lives
+    case waitingToServe // Before first hit
+    case inPlay         // Object ball is moving
+    case gameOver       // Someone won
 }
 
-// MARK: - GameViewModel
-// This is the "Brain" of the application. It handles all the rules and math.
 @Observable
 class GameViewModel {
     // MARK: - Stored properties
     
-    // NAVIGATION: Tracks the current screen.
     var currentScreen: AppScreen = .menu
-    
-    // NAVIGATION: Tracks the selected game mode.
     var gameMode: GameMode = .local
-    
-    // ARRAY: This stores all the players in the game.
     var players: [Player] = []
+    var activePlayerIndex: Int = 0
     
-    // The two balls used in Crud.
     var shooterBall: Ball
     var objectBall: Ball
     
-    // The current phase of the game.
     var gameState: GameState = .waitingToServe
-    
-    // The size of our virtual pool table.
     var tableSize: CGSize = CGSize(width: 300, height: 600)
     
-    // AI: Tracks if the computer is currently "thinking" to avoid double shots.
+    var servingAttempts: Int = 0
     var isAiThinking: Bool = false
+    
+    // The winner's name to display on the win screen
+    var winnerName: String = ""
+    
+    // Pocket settings
+    let pocketRadius: CGFloat = 25.0
     
     // MARK: - Initializer
     
     init() {
-        // Initialize the balls at their starting positions.
-        self.shooterBall = Ball(type: .shooter, position: CGPoint(x: 150, y: 550))
-        self.objectBall = Ball(type: .object, position: CGPoint(x: 150, y: 100))
-        
-        // Setup initial players for local mode.
+        self.shooterBall = Ball(type: .shooter, position: CGPoint(x: 150, y: 500))
+        self.objectBall = Ball(type: .object, position: CGPoint(x: 150, y: 150))
         setupPlayers(for: .local)
     }
     
     // MARK: - Functions
     
-    /// Sets up the player array based on the chosen game mode.
-    /// - Parameter mode: INPUT: Either .ai or .local
     func setupPlayers(for mode: GameMode) {
         self.gameMode = mode
         if mode == .ai {
@@ -82,99 +70,127 @@ class GameViewModel {
                 Player(name: "Player 2")
             ]
         }
-        self.players[0].isActive = true
+        activePlayerIndex = 0
+        updateActiveStatus()
         resetTable()
     }
     
-    /// Resets the balls to their starting spots and clears their speed.
     func resetTable() {
-        shooterBall.position = CGPoint(x: tableSize.width / 2, y: tableSize.height * 0.9)
+        shooterBall.position = CGPoint(x: tableSize.width / 2, y: tableSize.height * 0.8)
         shooterBall.velocity = .zero
+        shooterBall.isPocketed = false
         
-        objectBall.position = CGPoint(x: tableSize.width / 2, y: tableSize.height * 0.1)
+        objectBall.position = CGPoint(x: tableSize.width / 2, y: tableSize.height * 0.2)
         objectBall.velocity = .zero
+        objectBall.isPocketed = false
         
         gameState = .waitingToServe
+        servingAttempts = 0
         isAiThinking = false
     }
     
-    /// Called when the user drags their finger on the screen.
-    /// - Parameter point: INPUT: The new (x, y) coordinate where the finger is.
-    func dragBall(to point: CGPoint) {
-        // Only allow dragging if it's a human's turn.
-        if let activePlayer = players.first(where: { $0.isActive }), activePlayer.name != "CPU" {
-            shooterBall.position = point
-            shooterBall.velocity = .zero
+    func updateActiveStatus() {
+        for i in 0..<players.count {
+            players[i].isActive = (i == activePlayerIndex)
         }
     }
     
-    /// Called when the user releases their finger (the "Flick").
-    /// - Parameter velocity: INPUT: How fast and in what direction the flick happened.
-    func shootBall(with velocity: CGVector) {
-        shooterBall.velocity = velocity
-        gameState = .inPlay
+    func nextTurn() {
+        let alivePlayers = players.filter { $0.lives > 0 }
+        if alivePlayers.count <= 1 { return }
+        
+        activePlayerIndex = (activePlayerIndex + 1) % players.count
+        while players[activePlayerIndex].lives <= 0 {
+            activePlayerIndex = (activePlayerIndex + 1) % players.count
+        }
+        updateActiveStatus()
     }
     
-    /// This function is called 60 times per second by the View's Timeline.
-    func updatePhysics() {
-        let friction: CGFloat = 0.985 
+    func loseLife(playerIndex: Int) {
+        players[playerIndex].lives -= 1
         
+        if players[playerIndex].lives <= 0 {
+            checkWinner()
+        }
+        
+        // After losing a life, we reset the table for a new serve
+        if gameState != .gameOver {
+            // Ensure the next active player is someone who is still in the game
+            if players[activePlayerIndex].lives <= 0 {
+                nextTurn()
+            }
+            resetTable()
+        }
+    }
+    
+    func checkWinner() {
+        let alivePlayers = players.filter { $0.lives > 0 }
+        if alivePlayers.count == 1 {
+            winnerName = alivePlayers[0].name
+            gameState = .gameOver
+        }
+    }
+    
+    // Restrict shooting to the short ends (Top 20% or Bottom 20%)
+    func isValidShootPosition(_ point: CGPoint) -> Bool {
+        let threshold = tableSize.height * 0.2
+        return point.y < threshold || point.y > (tableSize.height - threshold)
+    }
+    
+    func dragBall(to point: CGPoint) {
+        if gameState == .gameOver { return }
+        
+        // Only allow dragging if it's a human turn
+        if players[activePlayerIndex].name != "CPU" {
+            // Restriction: Must shoot from short ends
+            if isValidShootPosition(point) {
+                shooterBall.position = point
+                shooterBall.velocity = .zero
+            }
+        }
+    }
+    
+    func shootBall(with velocity: CGVector) {
+        if gameState == .gameOver { return }
+        
+        shooterBall.velocity = velocity
+        
+        if gameState == .waitingToServe {
+            servingAttempts += 1
+        }
+    }
+    
+    func updatePhysics() {
+        if gameState == .gameOver { return }
+        
+        let friction: CGFloat = 0.985
         updateBallPhysics(shooterBall, friction: friction)
         updateBallPhysics(objectBall, friction: friction)
         
         checkBallCollision()
+        checkPockets()
         
-        // AI TURN: If it's the CPU's turn and balls have stopped, trigger the AI shot.
-        if gameMode == .ai && players.indices.contains(1) && players[1].isActive {
-            if !shooterBall.isMoving && !objectBall.isMoving && !isAiThinking {
+        // RULE: If object ball stops moving inPlay, current player loses life
+        if gameState == .inPlay && !objectBall.isMoving && !shooterBall.isMoving {
+            loseLife(playerIndex: activePlayerIndex)
+        }
+        
+        // RULE: Serving tries
+        if gameState == .waitingToServe && !shooterBall.isMoving && servingAttempts >= 3 {
+            loseLife(playerIndex: activePlayerIndex)
+        }
+        
+        // AI Turn Logic
+        if gameMode == .ai && activePlayerIndex == 1 && !isAiThinking {
+            if !shooterBall.isMoving && !objectBall.isMoving {
                 triggerAiShot()
             }
         }
     }
     
-    /// AI Logic: Calculates a shot towards the object ball and executes it.
-    private func triggerAiShot() {
-        isAiThinking = true
-        
-        // Add a small delay so the CPU doesn't shoot instantly (feels more natural).
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
-            
-            // 1. Calculate direction to the object ball.
-            let dx = self.objectBall.position.x - self.shooterBall.position.x
-            let dy = self.objectBall.position.y - self.shooterBall.position.y
-            
-            // 2. Normalize and scale for speed.
-            let distance = sqrt(dx*dx + dy*dy)
-            let speed: CGFloat = 15.0 // CPU shot power
-            
-            // 3. Add a bit of "Human Error" so it's not perfect every time.
-            let errorX = CGFloat.random(in: -10...10)
-            let errorY = CGFloat.random(in: -10...10)
-            
-            let velocity = CGVector(
-                dx: (dx / distance) * speed + errorX,
-                dy: (dy / distance) * speed + errorY
-            )
-            
-            // 4. Fire!
-            self.shootBall(with: velocity)
-            
-            // 5. Switch back to player turn (normally handled by game rules, but for now we'll toggle)
-            self.toggleActivePlayer()
-            self.isAiThinking = false
-        }
-    }
-    
-    /// Simple helper to switch turns between players.
-    private func toggleActivePlayer() {
-        for player in players {
-            player.isActive.toggle()
-        }
-    }
-    
-    /// Updates a single ball's position based on its speed and handles wall bounces.
     private func updateBallPhysics(_ ball: Ball, friction: CGFloat) {
+        if ball.isPocketed { return }
+        
         ball.position.x += ball.velocity.dx
         ball.position.y += ball.velocity.dy
         
@@ -184,6 +200,7 @@ class GameViewModel {
         if abs(ball.velocity.dx) < 0.1 { ball.velocity.dx = 0 }
         if abs(ball.velocity.dy) < 0.1 { ball.velocity.dy = 0 }
         
+        // Wall Bounces
         if ball.position.x - ball.radius <= 0 {
             ball.position.x = ball.radius
             ball.velocity.dx *= -0.8
@@ -201,44 +218,96 @@ class GameViewModel {
         }
     }
     
-    /// Uses geometry to see if balls are overlapping, then bounces them.
     private func checkBallCollision() {
-        // Pythagorean theorem to find the distance between ball centers.
+        if shooterBall.isPocketed || objectBall.isPocketed { return }
+        
         let dx = objectBall.position.x - shooterBall.position.x
         let dy = objectBall.position.y - shooterBall.position.y
         let distance = sqrt(dx*dx + dy*dy)
         let minDistance = shooterBall.radius + objectBall.radius
         
-        // If distance is less than the sum of radii, they are touching!
         if distance < minDistance {
-            // TRANSFER ENERGY: In this simple version, we swap their speeds.
+            // Collision detected!
             let tempVelocity = shooterBall.velocity
             shooterBall.velocity = objectBall.velocity
             objectBall.velocity = tempVelocity
             
-            // PREVENT STICKING: Push them apart so they don't get stuck inside each other.
+            // Push apart
             let overlap = minDistance - distance
-            let nx = dx / distance // Normal vector x
-            let ny = dy / distance // Normal vector y
+            let nx = dx / distance
+            let ny = dy / distance
             shooterBall.position.x -= nx * overlap / 2
             shooterBall.position.y -= ny * overlap / 2
             objectBall.position.x += nx * overlap / 2
             objectBall.position.y += ny * overlap / 2
+            
+            // RULE CHANGE: If shooter hits object, it's now "inPlay" and turn changes
+            if gameState == .waitingToServe || gameState == .inPlay {
+                gameState = .inPlay
+                nextTurn()
+                servingAttempts = 0 // Reset tries for the next serve (if any)
+            }
         }
     }
     
-    // MARK: - CRUD Functions
-    
-    /// Adds a new player to our array.
-    /// - Parameter name: The name of the new player.
-    func addPlayer(name: String) {
-        let newPlayer = Player(name: name)
-        players.append(newPlayer) // ARRAY: Adding to the end of the list.
+    private func checkPockets() {
+        let pockets = [
+            CGPoint(x: 0, y: 0),
+            CGPoint(x: tableSize.width, y: 0),
+            CGPoint(x: 0, y: tableSize.height),
+            CGPoint(x: tableSize.width, y: tableSize.height)
+        ]
+        
+        for pocket in pockets {
+            // Check object ball
+            if !objectBall.isPocketed {
+                let dist = sqrt(pow(objectBall.position.x - pocket.x, 2) + pow(objectBall.position.y - pocket.y, 2))
+                if dist < pocketRadius {
+                    objectBall.isPocketed = true
+                    objectBall.velocity = .zero
+                    
+                    // RULE: If pocketed, the opponent (defending player) loses a life.
+                    loseLife(playerIndex: activePlayerIndex)
+                }
+            }
+            
+            // Check shooter ball
+            if !shooterBall.isPocketed {
+                let dist = sqrt(pow(shooterBall.position.x - pocket.x, 2) + pow(shooterBall.position.y - pocket.y, 2))
+                if dist < pocketRadius {
+                    shooterBall.isPocketed = true
+                    shooterBall.velocity = .zero
+                    // Just reset shooter if it goes in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.shooterBall.isPocketed = false
+                        self.shooterBall.position = CGPoint(x: self.tableSize.width / 2, y: self.tableSize.height * 0.8)
+                    }
+                }
+            }
+        }
     }
     
-    /// Removes a player from the array.
-    /// - Parameter offsets: The position(s) in the list to remove.
-    func deletePlayer(at offsets: IndexSet) {
-        players.remove(atOffsets: offsets) // ARRAY: Removing from the list.
+    private func triggerAiShot() {
+        isAiThinking = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            guard let self = self else { return }
+            
+            // AI aims for the object ball
+            let dx = self.objectBall.position.x - self.shooterBall.position.x
+            let dy = self.objectBall.position.y - self.shooterBall.position.y
+            let distance = sqrt(dx*dx + dy*dy)
+            
+            let speed: CGFloat = 18.0
+            let error = CGFloat.random(in: -15...15)
+            
+            let velocity = CGVector(
+                dx: (dx / distance) * speed + error,
+                dy: (dy / distance) * speed + error
+            )
+            
+            self.shootBall(with: velocity)
+            self.isAiThinking = false
+        }
     }
 }

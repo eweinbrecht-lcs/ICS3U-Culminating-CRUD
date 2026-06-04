@@ -39,6 +39,12 @@ struct RootView: View {
             case .howToPlay:
                 // Displays the rules of Crud.
                 HowToPlayView(viewModel: viewModel)
+            case .localMultiplayer:
+                // Displays the setup for local 2-player game.
+                LocalMultiplayerView(viewModel: viewModel)
+            case .aiGame:
+                // Displays the setup for vs AI game.
+                AIGameView(viewModel: viewModel)
             }
         }
         // Smooth transition animation when switching screens.

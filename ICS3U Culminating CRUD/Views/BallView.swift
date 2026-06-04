@@ -22,6 +22,8 @@ struct BallView: View {
                 ballOverlay // Adds the stripe for the object ball
             )
             .position(ball.position) // Places the ball at the correct coordinates
+            .opacity(ball.isPocketed ? 0 : 1)
+            .animation(.easeOut, value: ball.isPocketed)
     }
     
     // Helper to determine color based on ball type.

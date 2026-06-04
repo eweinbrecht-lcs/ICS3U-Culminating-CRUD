@@ -18,6 +18,12 @@
 		CA4FF3312FCE12F00002A927 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FF3302FCE12F00002A927 /* GameView.swift */; };
 		CA4FF3332FCE12FA0002A927 /* BallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FF3322FCE12FA0002A927 /* BallView.swift */; };
 		CA5C41C02FD06586003A2485 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA5C41BF2FD06585003A2485 /* MainMenuView.swift */; };
+		CA9F707D2FD1D22D008AA27B /* LocalMultiplayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9F707C2FD1D22C008AA27B /* LocalMultiplayerView.swift */; };
+		CA9F707F2FD1D238008AA27B /* ViewComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9F707E2FD1D238008AA27B /* ViewComponents.swift */; };
+		CA9F70812FD1D24D008AA27B /* AIGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9F70802FD1D24D008AA27B /* AIGameView.swift */; };
+		CA9F70832FD1D257008AA27B /* ShopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9F70822FD1D257008AA27B /* ShopView.swift */; };
+		CA9F70852FD1D260008AA27B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9F70842FD1D260008AA27B /* SettingsView.swift */; };
+		CA9F70872FD1D27C008AA27B /* HowToPlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA9F70862FD1D27C008AA27B /* HowToPlayView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,7 +38,13 @@
 		CA4FF32E2FCE12E70002A927 /* HandView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandView.swift; sourceTree = "<group>"; };
 		CA4FF3302FCE12F00002A927 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		CA4FF3322FCE12FA0002A927 /* BallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallView.swift; sourceTree = "<group>"; };
-		CA5C41BF2FD06585003A2485 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MainMenuView.swift"; sourceTree = "<group>"; };
+		CA5C41BF2FD06585003A2485 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
+		CA9F707C2FD1D22C008AA27B /* LocalMultiplayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalMultiplayerView.swift; sourceTree = "<group>"; };
+		CA9F707E2FD1D238008AA27B /* ViewComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewComponents.swift; sourceTree = "<group>"; };
+		CA9F70802FD1D24D008AA27B /* AIGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIGameView.swift; sourceTree = "<group>"; };
+		CA9F70822FD1D257008AA27B /* ShopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopView.swift; sourceTree = "<group>"; };
+		CA9F70842FD1D260008AA27B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		CA9F70862FD1D27C008AA27B /* HowToPlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HowToPlayView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +112,12 @@
 				CA4FF3302FCE12F00002A927 /* GameView.swift */,
 				CA4FF32E2FCE12E70002A927 /* HandView.swift */,
 				CA4FF32C2FCE12DF0002A927 /* TableView.swift */,
+				CA9F707C2FD1D22C008AA27B /* LocalMultiplayerView.swift */,
+				CA9F707E2FD1D238008AA27B /* ViewComponents.swift */,
+				CA9F70802FD1D24D008AA27B /* AIGameView.swift */,
+				CA9F70822FD1D257008AA27B /* ShopView.swift */,
+				CA9F70842FD1D260008AA27B /* SettingsView.swift */,
+				CA9F70862FD1D27C008AA27B /* HowToPlayView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -180,10 +198,16 @@
 				CA4FF32B2FCE12D50002A927 /* GameViewModel.swift in Sources */,
 				CA4FF32D2FCE12DF0002A927 /* TableView.swift in Sources */,
 				CA4FF3292FCE128A0002A927 /* Ball.swift in Sources */,
+				CA9F707F2FD1D238008AA27B /* ViewComponents.swift in Sources */,
 				CA5C41C02FD06586003A2485 /* MainMenuView.swift in Sources */,
 				CA4FF32F2FCE12E70002A927 /* HandView.swift in Sources */,
+				CA9F70872FD1D27C008AA27B /* HowToPlayView.swift in Sources */,
+				CA9F70812FD1D24D008AA27B /* AIGameView.swift in Sources */,
+				CA9F70852FD1D260008AA27B /* SettingsView.swift in Sources */,
 				CA4FF3272FCE126D0002A927 /* Player.swift in Sources */,
 				CA4FF3132FCE0ACD0002A927 /* ICS3U Culminating CRUDApp.swift in Sources */,
+				CA9F70832FD1D257008AA27B /* ShopView.swift in Sources */,
+				CA9F707D2FD1D22D008AA27B /* LocalMultiplayerView.swift in Sources */,
 				CA4FF3312FCE12F00002A927 /* GameView.swift in Sources */,
 				CA4FF3332FCE12FA0002A927 /* BallView.swift in Sources */,
 			);

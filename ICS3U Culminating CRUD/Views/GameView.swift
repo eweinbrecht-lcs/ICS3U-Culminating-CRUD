@@ -136,6 +136,25 @@ struct GameView: View {
                 }
                 .background(Color.green.ignoresSafeArea())
                 
+                // --- DEAD BALL POPUP ---
+                if viewModel.showDeadBall {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                    
+                    VStack {
+                        Text("DEAD BALL")
+                            .font(.system(size: 40, weight: .black, design: .rounded))
+                            .foregroundColor(.red)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(Color.white)
+                                    .shadow(radius: 10)
+                            )
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                }
+                
                 // --- WIN SCREEN OVERLAY ---
                 if viewModel.gameState == .gameOver {
                     Color.black.opacity(0.8)
@@ -163,7 +182,7 @@ struct GameView: View {
     }
     
     private var isHumanTurn: Bool {
-        if viewModel.gameState == .gameOver { return false }
+        if viewModel.gameState == .gameOver || viewModel.showDeadBall { return false }
         let activePlayer = viewModel.players[viewModel.activePlayerIndex]
         return activePlayer.name != "CPU"
     }

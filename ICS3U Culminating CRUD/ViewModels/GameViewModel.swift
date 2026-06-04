@@ -41,6 +41,12 @@ class GameViewModel {
     var servingAttempts: Int = 0
     var isAiThinking: Bool = false
     
+    // Tracks if the current throw has already hit the object ball
+    var hasHitThisThrow: Bool = false
+    
+    // Controls the "Dead Ball" popup visibility
+    var showDeadBall: Bool = false
+    
     // The winner's name to display on the win screen
     var winnerName: String = ""
     
@@ -87,6 +93,7 @@ class GameViewModel {
         gameState = .waitingToServe
         servingAttempts = 0
         isAiThinking = false
+        hasHitThisThrow = false
     }
     
     func updateActiveStatus() {
@@ -115,11 +122,22 @@ class GameViewModel {
         
         // After losing a life, we reset the table for a new serve
         if gameState != .gameOver {
-            // Ensure the next active player is someone who is still in the game
             if players[activePlayerIndex].lives <= 0 {
                 nextTurn()
             }
             resetTable()
+        }
+    }
+    
+    func triggerDeadBall() {
+        if showDeadBall { return }
+        showDeadBall = true
+        
+        // The current player loses a life because they failed to hit it before it stopped
+        loseLife(playerIndex: activePlayerIndex)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.showDeadBall = false
         }
     }
     
@@ -131,18 +149,15 @@ class GameViewModel {
         }
     }
     
-    // Restrict shooting to the short ends (Top 20% or Bottom 20%)
     func isValidShootPosition(_ point: CGPoint) -> Bool {
         let threshold = tableSize.height * 0.2
         return point.y < threshold || point.y > (tableSize.height - threshold)
     }
     
     func dragBall(to point: CGPoint) {
-        if gameState == .gameOver { return }
+        if gameState == .gameOver || showDeadBall { return }
         
-        // Only allow dragging if it's a human turn
         if players[activePlayerIndex].name != "CPU" {
-            // Restriction: Must shoot from short ends
             if isValidShootPosition(point) {
                 shooterBall.position = point
                 shooterBall.velocity = .zero
@@ -151,37 +166,46 @@ class GameViewModel {
     }
     
     func shootBall(with velocity: CGVector) {
-        if gameState == .gameOver { return }
+        if gameState == .gameOver || showDeadBall { return }
         
-        shooterBall.velocity = velocity
+        // SLOW DOWN: Apply a reduction factor to the throw speed
+        let speedReduction: CGFloat = 0.5
+        shooterBall.velocity = CGVector(dx: velocity.dx * speedReduction, dy: velocity.dy * speedReduction)
+        
+        hasHitThisThrow = false
         
         if gameState == .waitingToServe {
             servingAttempts += 1
+        } else if gameState == .inPlay {
+            // TURN LOGIC: In CRUD, once the ball is in play, turn changes when you throw
+            nextTurn()
         }
     }
     
     func updatePhysics() {
-        if gameState == .gameOver { return }
+        if gameState == .gameOver || showDeadBall { return }
         
-        let friction: CGFloat = 0.985
+        // SLOW DOWN: Lower friction (higher friction value actually means slower decay in some engines, 
+        // but here 0.985 is decay, so 0.97 is faster decay = slower game)
+        let friction: CGFloat = 0.975
         updateBallPhysics(shooterBall, friction: friction)
         updateBallPhysics(objectBall, friction: friction)
         
         checkBallCollision()
         checkPockets()
         
-        // RULE: If object ball stops moving inPlay, current player loses life
+        // RULE: Dead Ball
         if gameState == .inPlay && !objectBall.isMoving && !shooterBall.isMoving {
-            loseLife(playerIndex: activePlayerIndex)
+            triggerDeadBall()
         }
         
         // RULE: Serving tries
         if gameState == .waitingToServe && !shooterBall.isMoving && servingAttempts >= 3 {
-            loseLife(playerIndex: activePlayerIndex)
+            triggerDeadBall()
         }
         
         // AI Turn Logic
-        if gameMode == .ai && activePlayerIndex == 1 && !isAiThinking {
+        if gameMode == .ai && activePlayerIndex == 1 && !isAiThinking && !showDeadBall {
             if !shooterBall.isMoving && !objectBall.isMoving {
                 triggerAiShot()
             }
@@ -203,18 +227,18 @@ class GameViewModel {
         // Wall Bounces
         if ball.position.x - ball.radius <= 0 {
             ball.position.x = ball.radius
-            ball.velocity.dx *= -0.8
+            ball.velocity.dx *= -0.7 // Bounce loss
         } else if ball.position.x + ball.radius >= tableSize.width {
             ball.position.x = tableSize.width - ball.radius
-            ball.velocity.dx *= -0.8
+            ball.velocity.dx *= -0.7
         }
         
         if ball.position.y - ball.radius <= 0 {
             ball.position.y = ball.radius
-            ball.velocity.dy *= -0.8
+            ball.velocity.dy *= -0.7
         } else if ball.position.y + ball.radius >= tableSize.height {
             ball.position.y = tableSize.height - ball.radius
-            ball.velocity.dy *= -0.8
+            ball.velocity.dy *= -0.7
         }
     }
     
@@ -227,25 +251,45 @@ class GameViewModel {
         let minDistance = shooterBall.radius + objectBall.radius
         
         if distance < minDistance {
-            // Collision detected!
-            let tempVelocity = shooterBall.velocity
-            shooterBall.velocity = objectBall.velocity
-            objectBall.velocity = tempVelocity
+            // Collision physics: Standard elastic collision
+            let nx = dx / distance
+            let ny = dy / distance
+            
+            let rdx = objectBall.velocity.dx - shooterBall.velocity.dx
+            let rdy = objectBall.velocity.dy - shooterBall.velocity.dy
+            let dotProduct = rdx * nx + rdy * ny
+            
+            if dotProduct < 0 {
+                let impulse = -1.5 * dotProduct // Coefficient of restitution (1.5 for a bit of pop)
+                
+                shooterBall.velocity.dx -= impulse * nx * 0.5
+                shooterBall.velocity.dy -= impulse * ny * 0.5
+                objectBall.velocity.dx += impulse * nx * 0.5
+                objectBall.velocity.dy += impulse * ny * 0.5
+                
+                // Ensure they don't stop instantly
+                if !shooterBall.isMoving { shooterBall.velocity = CGVector(dx: -nx * 2, dy: -ny * 2) }
+                if !objectBall.isMoving { objectBall.velocity = CGVector(dx: nx * 2, dy: ny * 2) }
+            }
             
             // Push apart
             let overlap = minDistance - distance
-            let nx = dx / distance
-            let ny = dy / distance
             shooterBall.position.x -= nx * overlap / 2
             shooterBall.position.y -= ny * overlap / 2
             objectBall.position.x += nx * overlap / 2
             objectBall.position.y += ny * overlap / 2
             
-            // RULE CHANGE: If shooter hits object, it's now "inPlay" and turn changes
-            if gameState == .waitingToServe || gameState == .inPlay {
-                gameState = .inPlay
-                nextTurn()
-                servingAttempts = 0 // Reset tries for the next serve (if any)
+            // TURN LOGIC: 
+            if !hasHitThisThrow {
+                hasHitThisThrow = true
+                
+                if gameState == .waitingToServe {
+                    // Successful serve!
+                    gameState = .inPlay
+                    nextTurn()
+                    servingAttempts = 0
+                }
+                // If already inPlay, turn already changed on shootBall
             }
         }
     }
@@ -259,25 +303,20 @@ class GameViewModel {
         ]
         
         for pocket in pockets {
-            // Check object ball
             if !objectBall.isPocketed {
                 let dist = sqrt(pow(objectBall.position.x - pocket.x, 2) + pow(objectBall.position.y - pocket.y, 2))
                 if dist < pocketRadius {
                     objectBall.isPocketed = true
                     objectBall.velocity = .zero
-                    
-                    // RULE: If pocketed, the opponent (defending player) loses a life.
                     loseLife(playerIndex: activePlayerIndex)
                 }
             }
             
-            // Check shooter ball
             if !shooterBall.isPocketed {
                 let dist = sqrt(pow(shooterBall.position.x - pocket.x, 2) + pow(shooterBall.position.y - pocket.y, 2))
                 if dist < pocketRadius {
                     shooterBall.isPocketed = true
                     shooterBall.velocity = .zero
-                    // Just reset shooter if it goes in
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         self.shooterBall.isPocketed = false
                         self.shooterBall.position = CGPoint(x: self.tableSize.width / 2, y: self.tableSize.height * 0.8)
@@ -293,13 +332,12 @@ class GameViewModel {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
             guard let self = self else { return }
             
-            // AI aims for the object ball
             let dx = self.objectBall.position.x - self.shooterBall.position.x
             let dy = self.objectBall.position.y - self.shooterBall.position.y
             let distance = sqrt(dx*dx + dy*dy)
             
-            let speed: CGFloat = 18.0
-            let error = CGFloat.random(in: -15...15)
+            let speed: CGFloat = 12.0 // AI also slowed down
+            let error = CGFloat.random(in: -10...10)
             
             let velocity = CGVector(
                 dx: (dx / distance) * speed + error,

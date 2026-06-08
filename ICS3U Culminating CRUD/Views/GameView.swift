@@ -52,10 +52,15 @@ struct GameView: View {
                                     }
                                 }
                             }
-                            .padding(8)
+                            .padding(10)
                             .background(
-                                RoundedRectangle(cornerRadius: 10)
+                                RoundedRectangle(cornerRadius: 12)
                                     .fill(player.isActive ? Color.white.opacity(0.2) : Color.clear)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(player.isActive ? Color.yellow : Color.clear, lineWidth: 3)
+                                    )
+                                    .shadow(color: player.isActive ? .yellow.opacity(0.3) : .clear, radius: 5)
                             )
                         }
                     }

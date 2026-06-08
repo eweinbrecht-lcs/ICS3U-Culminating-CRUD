@@ -252,10 +252,9 @@ class GameViewModel {
         
         if gameState == .waitingToServe {
             servingAttempts += 1
-        } else if gameState == .inPlay {
-            // TURN LOGIC: Once the ball is in play, the turn changes immediately upon throwing.
-            nextTurn()
         }
+        // NOTE: We no longer call nextTurn() here. 
+        // In CRUD, the turn only switches AFTER you successfully hit the object ball.
     }
     
     // MARK: - Physics Updates
@@ -383,6 +382,9 @@ class GameViewModel {
                     gameState = .inPlay
                     nextTurn()
                     servingAttempts = 0
+                } else {
+                    // NEW RULE: During regular play, the turn switches only after a successful hit!
+                    nextTurn()
                 }
             }
         }

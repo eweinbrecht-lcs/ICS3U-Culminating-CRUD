@@ -83,10 +83,15 @@ class GameViewModel {
         resetTable()
     }
     
-    func resetTable() {
+    func resetShooter() {
         shooterBall.position = CGPoint(x: tableSize.width / 2, y: tableSize.height * 0.8)
         shooterBall.velocity = .zero
         shooterBall.isPocketed = false
+        hasHitThisThrow = false
+    }
+    
+    func resetTable() {
+        resetShooter()
         
         objectBall.position = CGPoint(x: tableSize.width / 2, y: tableSize.height * 0.2)
         objectBall.velocity = .zero
@@ -95,7 +100,6 @@ class GameViewModel {
         gameState = .waitingToServe
         servingAttempts = 0
         isAiThinking = false
-        hasHitThisThrow = false
     }
     
     func updateActiveStatus() {
@@ -160,10 +164,8 @@ class GameViewModel {
         if gameState == .gameOver || showDeadBall { return }
         
         if players[activePlayerIndex].name != "CPU" {
-            if isValidShootPosition(point) {
-                shooterBall.position = point
-                shooterBall.velocity = .zero
-            }
+            shooterBall.position = point
+            shooterBall.velocity = .zero
         }
     }
     
@@ -189,9 +191,11 @@ class GameViewModel {
         
         // SLOW DOWN: Lower friction (higher friction value actually means slower decay in some engines, 
         // but here 0.985 is decay, so 0.97 is faster decay = slower game)
-        let friction: CGFloat = 0.975
-        updateBallPhysics(shooterBall, friction: friction)
-        updateBallPhysics(objectBall, friction: friction)
+        let shooterFriction: CGFloat = 0.975
+        let objectFriction: CGFloat = 0.985 // Slightly lower friction for longer slides
+        
+        updateBallPhysics(shooterBall, friction: shooterFriction)
+        updateBallPhysics(objectBall, friction: objectFriction)
         
         checkBallCollision()
         checkPockets()
@@ -202,8 +206,13 @@ class GameViewModel {
         }
         
         // RULE: Serving tries
-        if gameState == .waitingToServe && !shooterBall.isMoving && servingAttempts >= 3 {
-            triggerDeadBall()
+        if gameState == .waitingToServe && !shooterBall.isMoving && !hasHitThisThrow && servingAttempts > 0 {
+            if servingAttempts >= 3 {
+                triggerDeadBall()
+            } else {
+                // If they missed but still have tries, just reset the cue ball
+                resetShooter()
+            }
         }
         
         // AI Turn Logic

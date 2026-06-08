@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CA21B38D2FD7413B00D1C855 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA21B38C2FD7413B00D1C855 /* Settings.swift */; };
 		CA4FF3132FCE0ACD0002A927 /* ICS3U Culminating CRUDApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FF3122FCE0ACD0002A927 /* ICS3U Culminating CRUDApp.swift */; };
 		CA4FF3152FCE0ACD0002A927 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CA4FF3142FCE0ACD0002A927 /* Assets.xcassets */; };
 		CA4FF3222FCE0ACE0002A927 /* RELEASE.md in Resources */ = {isa = PBXBuildFile; fileRef = CA4FF3212FCE0ACE0002A927 /* RELEASE.md */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CA21B38C2FD7413B00D1C855 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		CA4FF30F2FCE0ACD0002A927 /* ICS3U Culminating CRUD.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ICS3U Culminating CRUD.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CA4FF3122FCE0ACD0002A927 /* ICS3U Culminating CRUDApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ICS3U Culminating CRUDApp.swift"; sourceTree = "<group>"; };
 		CA4FF3142FCE0ACD0002A927 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 			children = (
 				CA4FF3282FCE128A0002A927 /* Ball.swift */,
 				CA4FF3262FCE126C0002A927 /* Player.swift */,
+				CA21B38C2FD7413B00D1C855 /* Settings.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -205,6 +208,7 @@
 				CA9F70812FD1D24D008AA27B /* AIGameView.swift in Sources */,
 				CA9F70852FD1D260008AA27B /* SettingsView.swift in Sources */,
 				CA4FF3272FCE126D0002A927 /* Player.swift in Sources */,
+				CA21B38D2FD7413B00D1C855 /* Settings.swift in Sources */,
 				CA4FF3132FCE0ACD0002A927 /* ICS3U Culminating CRUDApp.swift in Sources */,
 				CA9F70832FD1D257008AA27B /* ShopView.swift in Sources */,
 				CA9F707D2FD1D22D008AA27B /* LocalMultiplayerView.swift in Sources */,

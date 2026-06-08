@@ -32,6 +32,8 @@ class GameViewModel {
     var players: [Player] = []
     var activePlayerIndex: Int = 0
     
+    var settings: Settings = Settings()
+    
     var shooterBall: Ball
     var objectBall: Ball
     
@@ -336,8 +338,22 @@ class GameViewModel {
             let dy = self.objectBall.position.y - self.shooterBall.position.y
             let distance = sqrt(dx*dx + dy*dy)
             
-            let speed: CGFloat = 12.0 // AI also slowed down
-            let error = CGFloat.random(in: -10...10)
+            let speed: CGFloat
+            let errorRange: ClosedRange<CGFloat>
+            
+            switch self.settings.difficulty {
+            case .easy:
+                speed = 8.0
+                errorRange = -20...20
+            case .medium:
+                speed = 12.0
+                errorRange = -10...10
+            case .hard:
+                speed = 16.0
+                errorRange = -5...5
+            }
+            
+            let error = CGFloat.random(in: errorRange)
             
             let velocity = CGVector(
                 dx: (dx / distance) * speed + error,

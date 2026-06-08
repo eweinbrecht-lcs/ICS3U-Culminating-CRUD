@@ -60,7 +60,7 @@ struct GameView: View {
                         }
                     }
                     .padding(.top, 5)
-                    .onChange(of: timeline.date) {
+                    .onChange(of: timeline.date) { oldDate, newDate in
                         viewModel.updatePhysics()
                     }
                     
@@ -95,22 +95,37 @@ struct GameView: View {
                         BallView(ball: viewModel.objectBall)
                         BallView(ball: viewModel.shooterBall)
                         
-                        // 4. The Hand (Top layer)
-                        if isHumanTurn && (!viewModel.shooterBall.isMoving && !viewModel.objectBall.isMoving) {
-                            HandView(isRightHand: true)
-                                .position(viewModel.shooterBall.position)
-                                .offset(y: 30)
+                        // Aiming Line
+                        if viewModel.isDragging {
+                            Path { path in
+                                path.move(to: viewModel.shooterBall.position)
+                                // The line points in the direction the ball WILL go (opposite of drag)
+                                let targetX = viewModel.shooterBall.position.x + (viewModel.dragStartPoint.x - viewModel.currentDragPoint.x)
+                                let targetY = viewModel.shooterBall.position.y + (viewModel.dragStartPoint.y - viewModel.currentDragPoint.y)
+                                path.addLine(to: CGPoint(x: targetX, y: targetY))
+                            }
+                            .stroke(Color.white.opacity(0.5), style: StrokeStyle(lineWidth: 4, lineCap: .round, dash: [10]))
+                        }
+                        
+                        // 4. Input Area (Transparent layer to catch gestures)
+                        if isHumanTurn {
+                            Color.clear
+                                .contentShape(Rectangle())
                                 .gesture(
-                                    DragGesture()
+                                    DragGesture(minimumDistance: 0)
                                         .onChanged { value in
-                                            viewModel.dragBall(to: value.location)
+                                            if !viewModel.isDragging {
+                                                // Only start dragging if the touch is near the shooter ball
+                                                let dist = sqrt(pow(value.startLocation.x - viewModel.shooterBall.position.x, 2) + pow(value.startLocation.y - viewModel.shooterBall.position.y, 2))
+                                                if dist < 40 {
+                                                    viewModel.startDragging(at: value.location)
+                                                }
+                                            } else {
+                                                viewModel.dragBall(to: value.location)
+                                            }
                                         }
-                                        .onEnded { value in
-                                            let velocity = CGVector(
-                                                dx: value.predictedEndLocation.x - value.location.x,
-                                                dy: value.predictedEndLocation.y - value.location.y
-                                            )
-                                            viewModel.shootBall(with: velocity)
+                                        .onEnded { _ in
+                                            viewModel.releaseBall()
                                         }
                                 )
                         }

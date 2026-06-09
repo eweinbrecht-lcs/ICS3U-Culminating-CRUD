@@ -175,6 +175,44 @@ struct GameView: View {
                     .transition(.scale.combined(with: .opacity))
                 }
                 
+                // --- MISSED SERVES POPUP ---
+                if viewModel.showMissedServes {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                    
+                    VStack {
+                        Text("MISSED SERVES")
+                            .font(.system(size: 40, weight: .black, design: .rounded))
+                            .foregroundColor(.orange)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(Color.white)
+                                    .shadow(radius: 10)
+                            )
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                }
+                
+                // --- SCORED POPUP ---
+                if viewModel.showScored {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                    
+                    VStack {
+                        Text("SCORED!")
+                            .font(.system(size: 40, weight: .black, design: .rounded))
+                            .foregroundColor(.green)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(Color.white)
+                                    .shadow(radius: 10)
+                            )
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                }
+                
                 // --- WIN SCREEN OVERLAY ---
                 if viewModel.gameState == .gameOver {
                     Color.black.opacity(0.8)

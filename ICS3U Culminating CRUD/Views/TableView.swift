@@ -29,7 +29,7 @@ struct TableView: View {
     
     @ViewBuilder
     private func pocket(for index: Int) -> some View {
-        let pocketRadius: CGFloat = 25
+        let pocketRadius: CGFloat = 30 // Increased from 25 for easier scoring
         Circle()
             .fill(Color.black)
             .frame(width: pocketRadius * 2, height: pocketRadius * 2)
